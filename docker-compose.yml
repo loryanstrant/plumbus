@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  plumbus:
+    # Pull from GitHub Container Registry (multi-arch support)
+    image: ghcr.io/loryanstrant/plumbus:latest
+    # Or build locally:
+    # build: .
+    container_name: plumbus-backup
+    ports:
+      - "5000:5000"
+    volumes:
+      - plumbus-data:/data
+      - ./config:/config:ro
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+
+volumes:
+  plumbus-data:
+    driver: local

@@ -1,0 +1,32 @@
+# PLUMBUS Configuration Example
+# Persistent Linux Unified Multi-device Backup & Update System
+#
+# Everyone has a Plumbus in their home... configure yours here!
+
+[server]
+# Where the dinglebop listens
+host = 0.0.0.0
+port = 5000
+debug = false
+
+[data]
+# Where the schleem gets repurposed
+data_dir = /data
+backup_dir = /data/backups
+db_path = /data/db/plumbus.db
+
+[backup]
+# Default rsync options (the fleeb juice mixture)
+rsync_options = -avz --delete
+
+# Maximum backup timeout in seconds (how long the Shlami works)
+backup_timeout = 3600
+
+# Maximum parallel backups (number of Shlamis available)
+max_parallel_backups = 3
+
+[scheduler]
+# Timezone for scheduled backups (when to push through the grumbo)
+timezone = UTC
+
+# Everyone has a Plumbus. Now you do too!
