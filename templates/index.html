@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plumbus - Centralized Backup Solution</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛸 PLUMBUS Backup Server</h1>
+            <p class="subtitle">Persistent Linux Unified Multi-device Backup & Update System</p>
+            <p class="tagline">Everyone has a Plumbus in their home... now every Linux cluster can have one too!</p>
+            <p class="tagline-small">⚠️ Regular Plumbus manufacturing involves schleem repurposing. PLUMBUS Backup System involves data repurposing (safely!).</p>
+        </header>
+
+        <div class="stats-panel">
+            <div class="stat-card">
+                <h3 id="stat-clients">0</h3>
+                <p>Clients</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-jobs">0</h3>
+                <p>Jobs</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-backups">0</h3>
+                <p>Backups</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-size">0 GB</h3>
+                <p>Total Size</p>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="clients">Clients</button>
+            <button class="tab-button" data-tab="jobs">Backup Jobs</button>
+            <button class="tab-button" data-tab="backups">Backup History</button>
+        </div>
+
+        <!-- Clients Tab -->
+        <div id="clients-tab" class="tab-content active">
+            <div class="section-header">
+                <h2>Backup Clients</h2>
+                <button class="btn btn-primary" onclick="showAddClientModal()">+ Add Client</button>
+            </div>
+            <div id="clients-list" class="list-container">
+                <p class="empty-message">No clients configured yet. First, take the dinglebop and smooth it out... or just click "Add Client" above! 📦</p>
+            </div>
+        </div>
+
+        <!-- Jobs Tab -->
+        <div id="jobs-tab" class="tab-content">
+            <div class="section-header">
+                <h2>Backup Jobs</h2>
+                <button class="btn btn-primary" onclick="showAddJobModal()">+ Add Job</button>
+            </div>
+            <div id="jobs-list" class="list-container">
+                <p class="empty-message">No backup jobs configured. The schleem is ready to be repurposed for later batches! Add a job to get started. 🔄</p>
+            </div>
+        </div>
+
+        <!-- Backups Tab -->
+        <div id="backups-tab" class="tab-content">
+            <div class="section-header">
+                <h2>Backup History</h2>
+                <button class="btn btn-secondary" onclick="loadBackups()">🔄 Refresh</button>
+            </div>
+            <div id="backups-list" class="list-container">
+                <p class="empty-message">No backups yet. Once a Shlami shows up and rubs your data with fleeb juice, backups will appear here! 🎯</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div id="add-client-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('add-client-modal')">&times;</span>
+            <h2>Add Backup Client</h2>
+            <form id="add-client-form" onsubmit="addClient(event)">
+                <div class="form-group">
+                    <label>Client Name:</label>
+                    <input type="text" name="name" required placeholder="e.g., Raspberry Pi Zero">
+                </div>
+                <div class="form-group">
+                    <label>Host:</label>
+                    <input type="text" name="host" required placeholder="e.g., 192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label>Port:</label>
+                    <input type="number" name="port" value="22" required>
+                </div>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" required placeholder="e.g., pi">
+                </div>
+                <div class="form-group">
+                    <label>Authentication Method:</label>
+                    <select name="auth_method" onchange="toggleAuthFields(this)">
+                        <option value="password">Password</option>
+                        <option value="key">SSH Key</option>
+                    </select>
+                </div>
+                <div class="form-group" id="password-field">
+                    <label>Password:</label>
+                    <input type="password" name="password" placeholder="Enter password">
+                </div>
+                <div class="form-group" id="key-field" style="display: none;">
+                    <label>SSH Key Path:</label>
+                    <input type="text" name="key_path" placeholder="/path/to/private/key">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-client-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Job Modal -->
+    <div id="add-job-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('add-job-modal')">&times;</span>
+            <h2>Add Backup Job</h2>
+            <form id="add-job-form" onsubmit="addJob(event)">
+                <div class="form-group">
+                    <label>Job Name:</label>
+                    <input type="text" name="name" required placeholder="e.g., Home Directory Backup">
+                </div>
+                <div class="form-group">
+                    <label>Client:</label>
+                    <select name="client_id" id="job-client-select" required onchange="loadClientPaths(this.value)">
+                        <option value="">Select a client...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Source Path:</label>
+                    <div class="path-input-group">
+                        <input type="text" name="source_path" id="source-path-input" required placeholder="/home/pi">
+                        <button type="button" class="btn btn-secondary" onclick="showFileBrowser()">Browse</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Schedule (Cron Expression):</label>
+                    <input type="text" name="schedule" placeholder="0 2 * * * (Daily at 2 AM)">
+                    <small>Format: minute hour day month day_of_week (leave empty for manual only)</small>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="enabled" checked> Enabled
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-job-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Job</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- File Browser Modal -->
+    <div id="file-browser-modal" class="modal">
+        <div class="modal-content large">
+            <span class="close" onclick="closeModal('file-browser-modal')">&times;</span>
+            <h2>Browse Files</h2>
+            <div class="breadcrumb" id="breadcrumb"></div>
+            <div id="file-list" class="file-browser">
+                <p class="loading">Loading...</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('file-browser-modal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="selectCurrentPath()">Select This Path</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Details Modal -->
+    <div id="job-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('job-details-modal')">&times;</span>
+            <h2>Job History</h2>
+            <div id="job-history-content">
+                <p class="loading">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
