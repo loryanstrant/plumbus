@@ -16,9 +16,10 @@ RUN apt-get update && \
         rsync \
         sshpass \
         gcc \
+        libc6-dev \
         libffi-dev && \
     pip install --no-cache-dir -r requirements.txt && \
-    apt-get purge -y gcc libffi-dev && \
+    apt-get purge -y gcc libc6-dev libffi-dev && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
