@@ -1,8 +1,9 @@
-# Multi-architecture Dockerfile for Plumbus backup server
+# Multi-architecture Dockerfile for PLUMBUS backup server
+# Supports ARM and x86 architectures (32-bit and 64-bit)
 FROM python:3.11-slim
 
 # Install required system packages for SSH and rsync
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     rsync \
     && rm -rf /var/lib/apt/lists/*
