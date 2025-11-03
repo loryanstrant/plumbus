@@ -82,7 +82,7 @@ class SSHClient:
             logger.error(f"Connection test failed: {e}")
             return {
                 'success': False,
-                'error': str(e)
+                'error': 'Failed to connect. Please check host, port, and credentials.'
             }
     
     def execute_command(self, command: str) -> Dict:
