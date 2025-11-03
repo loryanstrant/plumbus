@@ -18,7 +18,7 @@ RUN apt-get update && \
         gcc \
         libffi-dev && \
     pip install --no-cache-dir -r requirements.txt && \
-    apt-get remove -y gcc libffi-dev && \
+    apt-get purge -y gcc libffi-dev && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
