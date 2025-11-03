@@ -69,10 +69,13 @@ class SSHClient:
             
             # Test if user can run 'sudo -n rsync --version' (non-interactive sudo)
             # The -n flag makes sudo fail if password is required
-            stdin, stdout, stderr = self.client.exec_command('sudo -n rsync --version 2>&1')
+            stdin, stdout, stderr = self.client.exec_command('sudo -n rsync --version')
             output = stdout.read().decode().strip()
             error = stderr.read().decode().strip()
             exit_code = stdout.channel.recv_exit_status()
+            
+            # Combine output and error for checking
+            combined_output = output + ' ' + error
             
             if exit_code == 0 and 'rsync' in output.lower():
                 return {
@@ -80,7 +83,7 @@ class SSHClient:
                     'has_sudo': True,
                     'message': 'User has passwordless sudo access to rsync'
                 }
-            elif 'password is required' in output.lower() or 'password is required' in error.lower():
+            elif 'password is required' in combined_output.lower():
                 return {
                     'success': False,
                     'has_sudo': False,
@@ -92,7 +95,7 @@ class SSHClient:
                     'success': False,
                     'has_sudo': False,
                     'message': 'User does not have sudo access to rsync',
-                    'details': output or error
+                    'details': combined_output
                 }
         except Exception as e:
             logger.error(f"Sudo check failed: {e}")

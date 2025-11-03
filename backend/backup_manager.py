@@ -25,6 +25,38 @@ class BackupManager:
         self.scheduler.start()
         self._load_scheduled_jobs()
     
+    def _verify_sudo_access(self, client):
+        """Verify sudo access for a client if use_sudo is enabled
+        
+        Args:
+            client: Client dictionary from database
+            
+        Returns:
+            Dict with success status and optional error details
+        """
+        if not client.get('use_sudo'):
+            return {'success': True}
+        
+        logger.info(f"Checking sudo access for client {client['id']}")
+        ssh_client = SSHClient(
+            host=client['host'],
+            port=client['port'],
+            username=client['username'],
+            password=client.get('password'),
+            key_path=client.get('key_path')
+        )
+        sudo_check = ssh_client.check_sudo_access()
+        if not sudo_check.get('has_sudo', False):
+            error_msg = f"Sudo access check failed: {sudo_check.get('message', 'Unknown error')}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg,
+                'sudo_details': sudo_check.get('details', '')
+            }
+        logger.info("Sudo access verified")
+        return {'success': True}
+    
     def _load_scheduled_jobs(self):
         """Load and schedule all enabled jobs from database
         
@@ -104,25 +136,9 @@ class BackupManager:
             return {'success': False, 'error': 'Client not found'}
         
         # Check sudo access if use_sudo is enabled
-        if client.get('use_sudo'):
-            logger.info(f"Checking sudo access for client {client['id']}")
-            ssh_client = SSHClient(
-                host=client['host'],
-                port=client['port'],
-                username=client['username'],
-                password=client.get('password'),
-                key_path=client.get('key_path')
-            )
-            sudo_check = ssh_client.check_sudo_access()
-            if not sudo_check.get('has_sudo', False):
-                error_msg = f"Sudo access check failed: {sudo_check.get('message', 'Unknown error')}"
-                logger.error(error_msg)
-                return {
-                    'success': False,
-                    'error': error_msg,
-                    'sudo_details': sudo_check.get('details', '')
-                }
-            logger.info("Sudo access verified")
+        sudo_result = self._verify_sudo_access(client)
+        if not sudo_result['success']:
+            return sudo_result
         
         start_time = datetime.now()
         backup_name = f"{job['name']}_{start_time.strftime('%Y%m%d_%H%M%S')}"
@@ -286,25 +302,9 @@ class BackupManager:
             return {'success': False, 'error': 'Client not found'}
         
         # Check sudo access if use_sudo is enabled
-        if client.get('use_sudo'):
-            logger.info(f"Checking sudo access for client {client['id']} before restore")
-            ssh_client = SSHClient(
-                host=client['host'],
-                port=client['port'],
-                username=client['username'],
-                password=client.get('password'),
-                key_path=client.get('key_path')
-            )
-            sudo_check = ssh_client.check_sudo_access()
-            if not sudo_check.get('has_sudo', False):
-                error_msg = f"Sudo access check failed: {sudo_check.get('message', 'Unknown error')}"
-                logger.error(error_msg)
-                return {
-                    'success': False,
-                    'error': error_msg,
-                    'sudo_details': sudo_check.get('details', '')
-                }
-            logger.info("Sudo access verified for restore")
+        sudo_result = self._verify_sudo_access(client)
+        if not sudo_result['success']:
+            return sudo_result
         
         # Use original source path if restore_path not specified
         if not restore_path:
