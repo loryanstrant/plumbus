@@ -115,7 +115,9 @@ def test_client_connection(client_id):
             key_path=client.get('key_path')
         )
         
-        result = ssh_client.test_connection()
+        # Check sudo access if use_sudo is enabled
+        check_sudo = bool(client.get('use_sudo', False))
+        result = ssh_client.test_connection(check_sudo=check_sudo)
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error testing connection: {e}")

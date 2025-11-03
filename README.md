@@ -190,6 +190,13 @@ A: If you need to backup files that require elevated permissions (like `/etc/nut
   # Replace 'username' with the actual username
   username ALL=(ALL) NOPASSWD: /usr/bin/rsync
   ```
+
+**Important:** PLUMBUS will now automatically verify that the user has passwordless sudo access to rsync when you:
+- Test a connection with "Use sudo" enabled
+- Run a backup job with "Use sudo" enabled
+- Restore a backup with "Use sudo" enabled
+
+If sudo access is not properly configured, you will receive a clear error message with instructions on how to fix it.
   
 **Security Note:** This configuration allows the user to read any file on the system using rsync. Only grant this privilege to trusted users and consider restricting to specific paths if your sudo version supports it.
 

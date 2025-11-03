@@ -62,8 +62,52 @@ class SSHClient:
             self.client = None
             logger.info(f"Disconnected from {self.host}")
     
-    def test_connection(self) -> Dict:
-        """Test SSH connection and return result"""
+    def check_sudo_access(self) -> Dict:
+        """Check if the user has sudo access without password for rsync"""
+        try:
+            self.connect()
+            
+            # Test if user can run 'sudo -n rsync --version' (non-interactive sudo)
+            # The -n flag makes sudo fail if password is required
+            stdin, stdout, stderr = self.client.exec_command('sudo -n rsync --version 2>&1')
+            output = stdout.read().decode().strip()
+            error = stderr.read().decode().strip()
+            exit_code = stdout.channel.recv_exit_status()
+            
+            if exit_code == 0 and 'rsync' in output.lower():
+                return {
+                    'success': True,
+                    'has_sudo': True,
+                    'message': 'User has passwordless sudo access to rsync'
+                }
+            elif 'password is required' in output.lower() or 'password is required' in error.lower():
+                return {
+                    'success': False,
+                    'has_sudo': False,
+                    'message': 'User requires password for sudo. Please configure passwordless sudo for rsync.',
+                    'details': 'Add this line to /etc/sudoers using visudo:\nusername ALL=(ALL) NOPASSWD: /usr/bin/rsync'
+                }
+            else:
+                return {
+                    'success': False,
+                    'has_sudo': False,
+                    'message': 'User does not have sudo access to rsync',
+                    'details': output or error
+                }
+        except Exception as e:
+            logger.error(f"Sudo check failed: {e}")
+            return {
+                'success': False,
+                'has_sudo': False,
+                'error': str(e)
+            }
+    
+    def test_connection(self, check_sudo: bool = False) -> Dict:
+        """Test SSH connection and return result
+        
+        Args:
+            check_sudo: If True, also check for sudo access to rsync
+        """
         try:
             self.connect()
             
@@ -71,13 +115,23 @@ class SSHClient:
             stdin, stdout, stderr = self.client.exec_command('uname -a')
             uname = stdout.read().decode().strip()
             
-            self.disconnect()
-            
-            return {
+            result = {
                 'success': True,
                 'message': f'Connection successful',
                 'system_info': uname
             }
+            
+            # Check sudo access if requested
+            if check_sudo:
+                sudo_result = self.check_sudo_access()
+                result['sudo_available'] = sudo_result.get('has_sudo', False)
+                result['sudo_message'] = sudo_result.get('message', '')
+                if not sudo_result.get('has_sudo', False):
+                    result['sudo_details'] = sudo_result.get('details', '')
+            
+            self.disconnect()
+            
+            return result
         except Exception as e:
             logger.error(f"Connection test failed: {e}")
             return {

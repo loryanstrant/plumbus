@@ -103,6 +103,27 @@ class BackupManager:
         if not client:
             return {'success': False, 'error': 'Client not found'}
         
+        # Check sudo access if use_sudo is enabled
+        if client.get('use_sudo'):
+            logger.info(f"Checking sudo access for client {client['id']}")
+            ssh_client = SSHClient(
+                host=client['host'],
+                port=client['port'],
+                username=client['username'],
+                password=client.get('password'),
+                key_path=client.get('key_path')
+            )
+            sudo_check = ssh_client.check_sudo_access()
+            if not sudo_check.get('has_sudo', False):
+                error_msg = f"Sudo access check failed: {sudo_check.get('message', 'Unknown error')}"
+                logger.error(error_msg)
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'sudo_details': sudo_check.get('details', '')
+                }
+            logger.info("Sudo access verified")
+        
         start_time = datetime.now()
         backup_name = f"{job['name']}_{start_time.strftime('%Y%m%d_%H%M%S')}"
         backup_path = os.path.join(self.backup_dir, str(job['client_id']), backup_name)
@@ -263,6 +284,27 @@ class BackupManager:
         client = self.db.get_client(job['client_id'])
         if not client:
             return {'success': False, 'error': 'Client not found'}
+        
+        # Check sudo access if use_sudo is enabled
+        if client.get('use_sudo'):
+            logger.info(f"Checking sudo access for client {client['id']} before restore")
+            ssh_client = SSHClient(
+                host=client['host'],
+                port=client['port'],
+                username=client['username'],
+                password=client.get('password'),
+                key_path=client.get('key_path')
+            )
+            sudo_check = ssh_client.check_sudo_access()
+            if not sudo_check.get('has_sudo', False):
+                error_msg = f"Sudo access check failed: {sudo_check.get('message', 'Unknown error')}"
+                logger.error(error_msg)
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'sudo_details': sudo_check.get('details', '')
+                }
+            logger.info("Sudo access verified for restore")
         
         # Use original source path if restore_path not specified
         if not restore_path:
