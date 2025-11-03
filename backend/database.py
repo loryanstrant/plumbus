@@ -16,6 +16,13 @@ class Database:
         self.db_path = db_path
         self.init_database()
     
+    @staticmethod
+    def _bool_to_int(value):
+        """Convert boolean to integer for SQLite storage"""
+        if isinstance(value, bool):
+            return 1 if value else 0
+        return value
+    
     def get_connection(self):
         """Get database connection"""
         conn = sqlite3.connect(self.db_path)
@@ -38,6 +45,7 @@ class Database:
                 auth_method TEXT DEFAULT 'password',
                 password TEXT,
                 key_path TEXT,
+                use_sudo INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -76,19 +84,34 @@ class Database:
         ''')
         
         conn.commit()
+        
+        # Run migrations
+        self._run_migrations(cursor)
+        conn.commit()
+        
         conn.close()
         logger.info("Database initialized")
     
+    def _run_migrations(self, cursor):
+        """Run database migrations for schema updates"""
+        # Check if use_sudo column exists in clients table
+        cursor.execute("PRAGMA table_info(clients)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'use_sudo' not in columns:
+            logger.info("Running migration: Adding use_sudo column to clients table")
+            cursor.execute('ALTER TABLE clients ADD COLUMN use_sudo INTEGER DEFAULT 0')
+    
     # Client operations
     def add_client(self, name, host, port, username, auth_method='password', 
-                   password=None, key_path=None):
+                   password=None, key_path=None, use_sudo=False):
         """Add a new client"""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO clients (name, host, port, username, auth_method, password, key_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (name, host, port, username, auth_method, password, key_path))
+            INSERT INTO clients (name, host, port, username, auth_method, password, key_path, use_sudo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (name, host, port, username, auth_method, password, key_path, self._bool_to_int(use_sudo)))
         client_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -119,12 +142,15 @@ class Database:
         cursor = conn.cursor()
         
         # Whitelist of allowed fields to prevent SQL injection
-        allowed_fields = ['name', 'host', 'port', 'username', 'auth_method', 'password', 'key_path']
+        allowed_fields = ['name', 'host', 'port', 'username', 'auth_method', 'password', 'key_path', 'use_sudo']
         
         fields = []
         values = []
         for key, value in data.items():
             if key in allowed_fields:
+                # Convert boolean to integer for SQLite
+                if key == 'use_sudo':
+                    value = self._bool_to_int(value)
                 fields.append(f"{key} = ?")
                 values.append(value)
         
