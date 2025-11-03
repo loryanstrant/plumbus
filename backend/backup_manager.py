@@ -206,10 +206,18 @@ class BackupManager:
             'rsync',
             '-avz',  # archive, verbose, compress
             '--delete',  # delete files that don't exist on source
-            '-e', ssh_cmd,
+            '-e', ssh_cmd
+        ]
+        
+        # Add sudo support on remote side if enabled
+        if client.get('use_sudo'):
+            rsync_cmd.extend(['--rsync-path', 'sudo rsync'])
+            logger.info("Using sudo rsync on remote side")
+        
+        rsync_cmd.extend([
             f"{client['username']}@{client['host']}:{source_path}",
             dest_path
-        ]
+        ])
         
         # Add password authentication using sshpass if needed
         if client.get('password') and not client.get('key_path'):
@@ -280,10 +288,17 @@ class BackupManager:
             rsync_cmd = [
                 'rsync',
                 '-avz',
-                '-e', ssh_cmd,
+                '-e', ssh_cmd
+            ]
+            
+            # Add sudo support on remote side if enabled
+            if client.get('use_sudo'):
+                rsync_cmd.extend(['--rsync-path', 'sudo rsync'])
+            
+            rsync_cmd.extend([
                 backup['backup_path'] + '/',
                 f"{client['username']}@{client['host']}:{restore_path}"
-            ]
+            ])
             
             # Add password authentication using sshpass if needed
             if client.get('password') and not client.get('key_path'):
