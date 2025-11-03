@@ -15,7 +15,7 @@ PLUMBUS is a centralized backup solution for Raspberry Pi, Linux servers, and ot
 
 ### Features
 
-- 🚀 **Multi-Architecture Support**: Works on ARM and x86 systems (32-bit and 64-bit)
+- 🚀 **Multi-Architecture Support**: Works on ARM64 and x86-64 systems
 - 🌐 **Web Interface**: Beautiful UI for managing clients, jobs, and backups
 - 🔄 **Automated Backups**: Schedule backups using cron expressions
 - 📁 **File Browser**: Browse remote filesystems to select backup paths
@@ -23,6 +23,24 @@ PLUMBUS is a centralized backup solution for Raspberry Pi, Linux servers, and ot
 - 🏠 **VLAN-Friendly**: Works across different network segments
 - 📊 **Backup Statistics**: Track backup sizes, success rates, and history
 - ↻ **Restore Capability**: Easy restoration of backed-up files
+
+## Screenshots
+
+### Main Dashboard
+![Main Dashboard](docs/screenshots/main-dashboard.png)
+*The main dashboard showing backup statistics and navigation tabs*
+
+### Add Client Modal
+![Add Client Modal](docs/screenshots/add-client-modal.png)
+*Easy-to-use interface for adding backup clients with SSH authentication*
+
+### Backup Jobs
+![Backup Jobs](docs/screenshots/backup-jobs.png)
+*Manage and schedule backup jobs for your clients*
+
+### Backup History
+![Backup History](docs/screenshots/backup-history.png)
+*View and restore from backup history*
 
 ### How PLUMBUS is Made
 
@@ -106,13 +124,11 @@ Use cron expressions for scheduling:
 
 ## Architecture Support
 
-PLUMBUS supports all major architectures:
-- `linux/amd64` (x86 64-bit)
-- `linux/arm64` (ARM 64-bit, like Raspberry Pi 3/4/Zero 2 W)
-- `linux/arm/v7` (ARM 32-bit, like older Raspberry Pi)
-- `linux/386` (x86 32-bit)
+PLUMBUS supports the following architectures:
+- `linux/amd64` (x86 64-bit) - Most modern PCs and servers
+- `linux/arm64` (ARM 64-bit) - Raspberry Pi 3/4/5/Zero 2 W and other ARM64 devices
 
-The Docker image automatically detects and uses the correct architecture.
+The Docker image automatically detects and uses the correct architecture for your system.
 
 ## Requirements
 
