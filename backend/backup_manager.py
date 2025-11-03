@@ -196,7 +196,7 @@ class BackupManager:
     def _build_rsync_command(self, client, source_path, dest_path):
         """Build rsync command for backup"""
         # Build SSH connection string
-        ssh_cmd = f"ssh -p {client['port']}"
+        ssh_cmd = f"ssh -p {client['port']} -o StrictHostKeyChecking=no"
         
         if client.get('key_path'):
             ssh_cmd += f" -i {client['key_path']}"
@@ -211,11 +211,11 @@ class BackupManager:
             dest_path
         ]
         
-        # Add password via environment if using password auth
+        # Add password authentication using sshpass if needed
         if client.get('password') and not client.get('key_path'):
-            # Note: rsync doesn't support password on command line
-            # For production, consider using sshpass or SSH keys
-            logger.warning("Password authentication with rsync requires sshpass or SSH keys")
+            # Use sshpass for password authentication
+            rsync_cmd = ['sshpass', '-p', client['password']] + rsync_cmd
+            logger.info("Using password authentication with sshpass")
         
         return rsync_cmd
     
@@ -264,7 +264,7 @@ class BackupManager:
             logger.info(f"Starting restore of backup {backup_id} to {restore_path}")
             
             # Build rsync command for restore (reverse direction)
-            ssh_cmd = f"ssh -p {client['port']}"
+            ssh_cmd = f"ssh -p {client['port']} -o StrictHostKeyChecking=no"
             if client.get('key_path'):
                 ssh_cmd += f" -i {client['key_path']}"
             
@@ -276,7 +276,11 @@ class BackupManager:
                 f"{client['username']}@{client['host']}:{restore_path}"
             ]
             
-            logger.info(f"Executing: {' '.join(rsync_cmd)}")
+            # Add password authentication using sshpass if needed
+            if client.get('password') and not client.get('key_path'):
+                rsync_cmd = ['sshpass', '-p', client['password']] + rsync_cmd
+            
+            logger.info(f"Executing restore command")
             result = subprocess.run(
                 rsync_cmd,
                 capture_output=True,

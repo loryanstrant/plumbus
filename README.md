@@ -165,6 +165,23 @@ A: Yes! As long as the backup server can reach your clients via SSH (port 22 by 
 **Q: Does this support Windows?**
 A: PLUMBUS is designed for Linux systems. Windows support would require significant schleem repurposing.
 
+## Security Considerations
+
+⚠️ **Important Security Notes:**
+
+- **Password Storage**: Passwords are stored in the database. For production use, ensure the database file is properly secured with filesystem permissions.
+- **SSH Keys Recommended**: For better security, use SSH key-based authentication instead of passwords.
+- **Host Key Verification**: SSH host keys are automatically accepted. In production environments, consider manually verifying host keys first.
+- **Network Security**: Ensure PLUMBUS is deployed in a trusted network environment or behind proper authentication/authorization.
+- **Docker Security**: Run the container with appropriate user permissions and resource limits.
+
+**Best Practices:**
+1. Use SSH key-based authentication for all clients
+2. Secure the `/data` volume with appropriate permissions
+3. Use firewall rules to restrict access to PLUMBUS web interface
+4. Regularly update the Docker image to get security patches
+5. Back up your PLUMBUS database regularly
+
 ## Contributing
 
 Everyone knows about Plumbus, but contributions are always welcome! 
