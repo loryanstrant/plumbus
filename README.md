@@ -175,6 +175,17 @@ A: Just like a regular Plumbus, sometimes you need to smooth out the dinglebop. 
 - Sufficient disk space on the backup server
 - Correct source path on the client
 
+**Q: I'm getting "Permission denied" errors when backing up system files**
+A: If you need to backup files that require elevated permissions (like `/etc/nut/` or other system directories), enable the "Use sudo" option for the client. This will run `sudo rsync` on the remote server. 
+
+**Requirements:**
+- The remote user must have sudo privileges
+- Configure passwordless sudo for rsync on the remote server:
+  ```bash
+  # Add this line to /etc/sudoers (use visudo)
+  username ALL=(ALL) NOPASSWD: /usr/bin/rsync
+  ```
+
 **Q: Can I backup across VLANs?**
 A: Yes! As long as the backup server can reach your clients via SSH (port 22 by default).
 
@@ -197,6 +208,7 @@ A: PLUMBUS is designed for Linux systems. Windows support would require signific
 3. Use firewall rules to restrict access to PLUMBUS web interface
 4. Regularly update the Docker image to get security patches
 5. Back up your PLUMBUS database regularly
+6. When using sudo for backups, limit sudo privileges to only rsync using NOPASSWD configuration
 
 ## Contributing
 
