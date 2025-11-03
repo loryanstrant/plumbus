@@ -2,19 +2,25 @@
 # Supports ARM and x86 architectures (32-bit and 64-bit)
 FROM python:3.11-slim
 
-# Install required system packages for SSH and rsync
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-client \
-    rsync \
-    sshpass \
-    && rm -rf /var/lib/apt/lists/*
-
 # Create app directory
 WORKDIR /app
 
-# Copy requirements and install Python dependencies
+# Copy requirements first for better layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install all dependencies, build Python packages, then remove build dependencies
+# This is done in one RUN command to minimize layer size
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        openssh-client \
+        rsync \
+        sshpass \
+        gcc \
+        libffi-dev && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get purge -y gcc libffi-dev && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy application files
 COPY . .
