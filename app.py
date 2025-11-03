@@ -77,7 +77,7 @@ def clients():
             return jsonify({'success': True, 'client_id': client_id})
         except Exception as e:
             logger.error(f"Error adding client: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 400
+            return jsonify({'success': False, 'error': 'Failed to add client'}), 400
     else:
         clients = db.get_all_clients()
         return jsonify(clients)
@@ -118,7 +118,7 @@ def test_client_connection(client_id):
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': 'Connection test failed'}), 400
 
 @app.route('/api/clients/<int:client_id>/browse', methods=['POST'])
 def browse_client_files(client_id):
@@ -143,7 +143,7 @@ def browse_client_files(client_id):
         return jsonify({'success': True, 'path': path, 'files': files})
     except Exception as e:
         logger.error(f"Error browsing files: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': 'Failed to browse files'}), 400
 
 @app.route('/api/jobs', methods=['GET', 'POST'])
 def jobs():
@@ -166,7 +166,7 @@ def jobs():
             return jsonify({'success': True, 'job_id': job_id})
         except Exception as e:
             logger.error(f"Error adding job: {e}")
-            return jsonify({'success': False, 'error': str(e)}), 400
+            return jsonify({'success': False, 'error': 'Failed to add job'}), 400
     else:
         jobs = db.get_all_jobs()
         return jsonify(jobs)
@@ -204,7 +204,7 @@ def run_job(job_id):
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error running job: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': 'Failed to run backup job'}), 400
 
 @app.route('/api/jobs/<int:job_id>/history', methods=['GET'])
 def job_history(job_id):
@@ -228,7 +228,7 @@ def restore_backup(backup_id):
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error restoring backup: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': 'Failed to restore backup'}), 400
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():

@@ -124,8 +124,8 @@ class BackupManager:
             # Build rsync command
             rsync_cmd = self._build_rsync_command(client, job['source_path'], backup_path)
             
-            # Execute rsync
-            logger.info(f"Executing: {' '.join(rsync_cmd)}")
+            # Execute rsync (don't log command to avoid exposing passwords)
+            logger.info(f"Executing backup command for job {job_id} (credentials redacted)")
             result = subprocess.run(
                 rsync_cmd,
                 capture_output=True,
@@ -259,6 +259,15 @@ class BackupManager:
         # Use original source path if restore_path not specified
         if not restore_path:
             restore_path = backup['source_path']
+        
+        # Validate restore_path to prevent path traversal attacks
+        if not restore_path.startswith('/'):
+            return {'success': False, 'error': 'Restore path must be absolute'}
+        
+        # Basic validation - no dangerous characters
+        dangerous_chars = [';', '&', '|', '`', '$', '\n', '\r']
+        if any(char in restore_path for char in dangerous_chars):
+            return {'success': False, 'error': 'Invalid restore path'}
         
         try:
             logger.info(f"Starting restore of backup {backup_id} to {restore_path}")

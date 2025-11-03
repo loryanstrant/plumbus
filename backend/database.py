@@ -118,10 +118,13 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
+        # Whitelist of allowed fields to prevent SQL injection
+        allowed_fields = ['name', 'host', 'port', 'username', 'auth_method', 'password', 'key_path']
+        
         fields = []
         values = []
         for key, value in data.items():
-            if key not in ['id', 'created_at']:
+            if key in allowed_fields:
                 fields.append(f"{key} = ?")
                 values.append(value)
         
@@ -194,10 +197,13 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
+        # Whitelist of allowed fields to prevent SQL injection
+        allowed_fields = ['client_id', 'name', 'source_path', 'schedule', 'enabled', 'last_run']
+        
         fields = []
         values = []
         for key, value in data.items():
-            if key not in ['id', 'created_at', 'client_name', 'host']:
+            if key in allowed_fields:
                 if key == 'enabled' and isinstance(value, bool):
                     value = 1 if value else 0
                 fields.append(f"{key} = ?")
