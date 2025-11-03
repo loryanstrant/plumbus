@@ -16,6 +16,13 @@ class Database:
         self.db_path = db_path
         self.init_database()
     
+    @staticmethod
+    def _bool_to_int(value):
+        """Convert boolean to integer for SQLite storage"""
+        if isinstance(value, bool):
+            return 1 if value else 0
+        return value
+    
     def get_connection(self):
         """Get database connection"""
         conn = sqlite3.connect(self.db_path)
@@ -104,7 +111,7 @@ class Database:
         cursor.execute('''
             INSERT INTO clients (name, host, port, username, auth_method, password, key_path, use_sudo)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (name, host, port, username, auth_method, password, key_path, 1 if use_sudo else 0))
+        ''', (name, host, port, username, auth_method, password, key_path, self._bool_to_int(use_sudo)))
         client_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -142,8 +149,8 @@ class Database:
         for key, value in data.items():
             if key in allowed_fields:
                 # Convert boolean to integer for SQLite
-                if key == 'use_sudo' and isinstance(value, bool):
-                    value = 1 if value else 0
+                if key == 'use_sudo':
+                    value = self._bool_to_int(value)
                 fields.append(f"{key} = ?")
                 values.append(value)
         

@@ -72,7 +72,8 @@ def clients():
                 username=data['username'],
                 auth_method=data.get('auth_method', 'password'),
                 password=data.get('password'),
-                key_path=data.get('key_path')
+                key_path=data.get('key_path'),
+                use_sudo=data.get('use_sudo', False)
             )
             return jsonify({'success': True, 'client_id': client_id})
         except Exception as e:

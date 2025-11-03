@@ -182,9 +182,16 @@ A: If you need to backup files that require elevated permissions (like `/etc/nut
 - The remote user must have sudo privileges
 - Configure passwordless sudo for rsync on the remote server:
   ```bash
-  # Add this line to /etc/sudoers (use visudo)
+  # Add these lines to /etc/sudoers (use visudo)
+  # Allow rsync to run without a TTY (required for SSH-based automation)
+  Defaults!/usr/bin/rsync !requiretty
+  
+  # Allow specific user to run rsync with sudo without password
+  # Replace 'username' with the actual username
   username ALL=(ALL) NOPASSWD: /usr/bin/rsync
   ```
+  
+**Security Note:** This configuration allows the user to read any file on the system using rsync. Only grant this privilege to trusted users and consider restricting to specific paths if your sudo version supports it.
 
 **Q: Can I backup across VLANs?**
 A: Yes! As long as the backup server can reach your clients via SSH (port 22 by default).
