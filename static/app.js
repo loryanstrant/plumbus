@@ -578,6 +578,12 @@ function displayBackups(backups) {
 function filterBackups() {
     const clientId = document.getElementById('backup-client-filter').value;
     if (clientId) {
+        // Ensure allJobs is loaded
+        if (!allJobs || allJobs.length === 0) {
+            displayBackups(allBackups);
+            return;
+        }
+        
         const filtered = allBackups.filter(backup => {
             const job = allJobs.find(j => j.id === backup.job_id);
             return job && job.client_id == clientId;
@@ -727,9 +733,15 @@ async function browsePath(path) {
 
 function selectCurrentPath() {
     if (currentEditMode === 'edit') {
-        document.getElementById('edit-source-path-input').value = currentPath;
+        const editInput = document.getElementById('edit-source-path-input');
+        if (editInput) {
+            editInput.value = currentPath;
+        }
     } else {
-        document.getElementById('source-path-input').value = currentPath;
+        const addInput = document.getElementById('source-path-input');
+        if (addInput) {
+            addInput.value = currentPath;
+        }
     }
     closeModal('file-browser-modal');
 }

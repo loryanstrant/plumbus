@@ -19,7 +19,6 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
-from pathlib import Path
 
 from backend.ssh_client import SSHClient
 from backend.backup_manager import BackupManager
