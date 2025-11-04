@@ -120,16 +120,24 @@ docker run -d \
 2. Click "Add Job"
 3. Select your client
 4. Use the file browser to select what to backup
-5. Set a schedule (or leave empty for manual backups)
+5. Set a schedule using the user-friendly interface:
+   - **Frequency**: Choose Daily, Weekly, Monthly, or Manual Only
+   - **Time of Day**: Select hour and minute using dropdowns
+   - **Days of Week**: For weekly schedules, select which days to run
+   - **Day of Month**: For monthly schedules, choose which day
+   - **Custom**: Advanced users can enter custom cron expressions
 6. Enable the job
 
-### Scheduling Format
+### Scheduling Options
 
-Use cron expressions for scheduling:
-- `0 2 * * *` - Daily at 2 AM
-- `0 0 * * 0` - Weekly on Sunday at midnight
-- `0 */6 * * *` - Every 6 hours
-- `*/30 * * * *` - Every 30 minutes
+PLUMBUS now features an intuitive scheduling interface:
+- **Daily**: Runs every day at a specified time (e.g., 2 AM)
+- **Weekly**: Select specific days of the week (Mon-Sun) and time
+- **Monthly**: Choose a day of month (1st-28th) and time
+- **Manual Only**: Run backups on-demand only
+- **Custom**: Enter cron expressions for advanced scheduling
+  - Example: `0 */6 * * *` - Every 6 hours
+  - Example: `*/30 * * * *` - Every 30 minutes
 
 ## Architecture Support
 
