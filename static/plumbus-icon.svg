@@ -1,25 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <!-- Plumbus body (pinkish color) -->
-  <ellipse cx="50" cy="45" rx="25" ry="35" fill="#E89AC7" stroke="#8B4B78" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Main Plumbus body - elongated with bulbous top -->
+  <ellipse cx="60" cy="70" rx="22" ry="38" fill="#E89AC7" stroke="#A65E8A" stroke-width="1.5"/>
   
-  <!-- Top schleem bulb -->
-  <circle cx="50" cy="15" r="12" fill="#E89AC7" stroke="#8B4B78" stroke-width="2"/>
+  <!-- Top bulbous section -->
+  <ellipse cx="60" cy="35" rx="18" ry="20" fill="#E89AC7" stroke="#A65E8A" stroke-width="1.5"/>
   
-  <!-- Dinglebop handle -->
-  <path d="M 35 50 Q 20 50 15 60 L 10 70" stroke="#8B4B78" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <circle cx="10" cy="70" r="5" fill="#8B4B78"/>
+  <!-- Neck connection -->
+  <rect x="52" y="50" width="16" height="10" fill="#E89AC7" stroke="#A65E8A" stroke-width="1.5"/>
   
-  <!-- Grumbo attachment -->
-  <path d="M 65 50 Q 80 50 85 60 L 90 70" stroke="#8B4B78" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <circle cx="90" cy="70" r="5" fill="#8B4B78"/>
+  <!-- Left appendage (fleeb) -->
+  <ellipse cx="35" cy="60" rx="8" ry="15" fill="#D88BB8" stroke="#A65E8A" stroke-width="1.5" transform="rotate(-25 35 60)"/>
+  <path d="M 42 58 Q 35 55 30 58" fill="none" stroke="#A65E8A" stroke-width="1.5"/>
   
-  <!-- Fleeb juice lines (decorative) -->
-  <line x1="45" y1="30" x2="45" y2="60" stroke="#B67FA4" stroke-width="1.5" opacity="0.6"/>
-  <line x1="50" y1="25" x2="50" y2="65" stroke="#B67FA4" stroke-width="1.5" opacity="0.6"/>
-  <line x1="55" y1="30" x2="55" y2="60" stroke="#B67FA4" stroke-width="1.5" opacity="0.6"/>
+  <!-- Right appendage (fleeb) -->
+  <ellipse cx="85" cy="60" rx="8" ry="15" fill="#D88BB8" stroke="#A65E8A" stroke-width="1.5" transform="rotate(25 85 60)"/>
+  <path d="M 78 58 Q 85 55 90 58" fill="none" stroke="#A65E8A" stroke-width="1.5"/>
   
-  <!-- Hizzard marks -->
-  <circle cx="42" cy="40" r="2" fill="#8B4B78"/>
-  <circle cx="58" cy="40" r="2" fill="#8B4B78"/>
-  <circle cx="50" cy="50" r="2" fill="#8B4B78"/>
+  <!-- Bottom left protrusion -->
+  <ellipse cx="42" cy="95" rx="6" ry="12" fill="#D88BB8" stroke="#A65E8A" stroke-width="1.5" transform="rotate(-15 42 95)"/>
+  
+  <!-- Bottom right protrusion -->
+  <ellipse cx="78" cy="95" rx="6" ry="12" fill="#D88BB8" stroke="#A65E8A" stroke-width="1.5" transform="rotate(15 78 95)"/>
+  
+  <!-- Top nub -->
+  <circle cx="60" cy="20" r="7" fill="#D88BB8" stroke="#A65E8A" stroke-width="1.5"/>
+  
+  <!-- Texture bumps on body -->
+  <circle cx="52" cy="65" r="3" fill="#D88BB8" opacity="0.6"/>
+  <circle cx="68" cy="70" r="3" fill="#D88BB8" opacity="0.6"/>
+  <circle cx="58" cy="80" r="2.5" fill="#D88BB8" opacity="0.6"/>
+  <circle cx="65" cy="85" r="2.5" fill="#D88BB8" opacity="0.6"/>
+  
+  <!-- Surface details -->
+  <path d="M 55 45 Q 60 43 65 45" fill="none" stroke="#A65E8A" stroke-width="1" opacity="0.5"/>
+  <path d="M 54 75 Q 60 73 66 75" fill="none" stroke="#A65E8A" stroke-width="1" opacity="0.5"/>
 </svg>
