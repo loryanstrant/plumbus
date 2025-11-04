@@ -1,5 +1,9 @@
 // Plumbus Backup Server - Client-side JavaScript
 
+// Constants
+const DEFAULT_SCHEDULE_HOUR = 2;  // 2 AM
+const DEFAULT_SCHEDULE_MINUTE = 0;  // :00
+
 // Global state
 let currentClient = null;
 let currentPath = '/';
@@ -870,8 +874,9 @@ function buildScheduleFromUI(mode) {
         const dayOfMonth = document.getElementById(`${prefix}-schedule-day-of-month`).value;
         
         if (dayOfMonth === 'last') {
-            // Use L for last day of month (some cron implementations support this)
-            // Fall back to day 28 for broader compatibility
+            // NOTE: Standard cron doesn't support 'L' for last day of month
+            // Using day 28 as a safe fallback that exists in all months
+            // Users needing true last-day-of-month should use Custom mode with external tools
             cron = `${minute} ${hour} 28 * *`;
         } else {
             cron = `${minute} ${hour} ${dayOfMonth} * *`;
@@ -901,9 +906,9 @@ function parseScheduleToUI(schedule, mode) {
     
     const [minute, hour, day, month, dayOfWeek] = parts;
     
-    // Set time values
-    document.getElementById(`${prefix}-schedule-hour`).value = hour === '*' ? '2' : hour;
-    document.getElementById(`${prefix}-schedule-minute`).value = minute === '*' ? '0' : minute;
+    // Set time values (use defaults for wildcards)
+    document.getElementById(`${prefix}-schedule-hour`).value = hour === '*' ? DEFAULT_SCHEDULE_HOUR.toString() : hour;
+    document.getElementById(`${prefix}-schedule-minute`).value = minute === '*' ? DEFAULT_SCHEDULE_MINUTE.toString() : minute;
     
     // Determine frequency type
     if (day === '*' && month === '*' && dayOfWeek === '*') {

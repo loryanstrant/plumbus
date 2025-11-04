@@ -617,11 +617,16 @@ body {
     border-color: var(--primary-color);
 }
 
-.days-picker input[type="checkbox"]:checked + label,
+.days-picker input[type="checkbox"]:checked ~ label,
 .days-picker label:has(input[type="checkbox"]:checked) {
     background-color: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+}
+
+/* Fallback for browsers without :has() support */
+.days-picker input[type="checkbox"]:checked {
+    accent-color: var(--primary-color);
 }
 
 .days-picker input[type="checkbox"] {
