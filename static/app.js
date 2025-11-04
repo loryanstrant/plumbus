@@ -3,10 +3,15 @@
 // Global state
 let currentClient = null;
 let currentPath = '/';
+let currentEditMode = null; // 'add' or 'edit' for file browser context
+let allJobs = [];
+let allBackups = [];
+let allClients = [];
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initTabs();
+    loadVersion();
     loadStats();
     loadClients();
     loadJobs();
@@ -69,6 +74,17 @@ async function apiCall(url, method = 'GET', data = null) {
     }
 }
 
+// Version
+async function loadVersion() {
+    try {
+        const result = await apiCall('/api/version');
+        document.getElementById('version-display').textContent = `Version: ${result.version}`;
+    } catch (error) {
+        console.error('Failed to load version:', error);
+        document.getElementById('version-display').textContent = 'Version: Unknown';
+    }
+}
+
 // Statistics
 async function loadStats() {
     try {
@@ -86,6 +102,7 @@ async function loadStats() {
 async function loadClients() {
     try {
         const clients = await apiCall('/api/clients');
+        allClients = clients;
         const container = document.getElementById('clients-list');
         
         if (clients.length === 0) {
@@ -99,14 +116,19 @@ async function loadClients() {
                     <div class="item-title">${escapeHtml(client.name)}</div>
                     <div class="item-meta">
                         ${escapeHtml(client.username)}@${escapeHtml(client.host)}:${client.port}
+                        ${client.use_sudo ? ' | <strong>Using sudo</strong>' : ''}
                     </div>
                 </div>
                 <div class="item-actions">
                     <button class="btn btn-secondary btn-sm" onclick="testClient(${client.id})">Test</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showEditClientModal(${client.id})">Edit</button>
                     <button class="btn btn-danger btn-sm" onclick="deleteClient(${client.id})">Delete</button>
                 </div>
             </div>
         `).join('');
+        
+        // Update client filter dropdowns
+        updateClientFilters();
     } catch (error) {
         console.error('Failed to load clients:', error);
         showMessage('Failed to load clients', 'error');
@@ -127,7 +149,8 @@ async function addClient(event) {
         host: formData.get('host'),
         port: parseInt(formData.get('port')),
         username: formData.get('username'),
-        auth_method: formData.get('auth_method')
+        auth_method: formData.get('auth_method'),
+        use_sudo: formData.get('use_sudo') === 'on'
     };
     
     if (data.auth_method === 'password') {
@@ -145,6 +168,69 @@ async function addClient(event) {
         showMessage('Client added successfully! The dinglebop has been smoothed! 🎉', 'success');
     } catch (error) {
         showMessage('Failed to add client: ' + error.message, 'error');
+    }
+}
+
+async function showEditClientModal(clientId) {
+    try {
+        const client = await apiCall(`/api/clients/${clientId}`);
+        
+        document.getElementById('edit-client-id').value = client.id;
+        document.getElementById('edit-client-name').value = client.name;
+        document.getElementById('edit-client-host').value = client.host;
+        document.getElementById('edit-client-port').value = client.port;
+        document.getElementById('edit-client-username').value = client.username;
+        document.getElementById('edit-client-auth-method').value = client.auth_method;
+        document.getElementById('edit-client-use-sudo').checked = client.use_sudo === 1;
+        
+        if (client.auth_method === 'password') {
+            document.getElementById('edit-password-field').style.display = 'block';
+            document.getElementById('edit-key-field').style.display = 'none';
+            document.getElementById('edit-client-password').value = '';
+        } else {
+            document.getElementById('edit-password-field').style.display = 'none';
+            document.getElementById('edit-key-field').style.display = 'block';
+            document.getElementById('edit-client-key-path').value = client.key_path || '';
+        }
+        
+        document.getElementById('edit-client-modal').style.display = 'block';
+    } catch (error) {
+        showMessage('Failed to load client: ' + error.message, 'error');
+    }
+}
+
+async function updateClient(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const clientId = formData.get('client_id');
+    
+    const data = {
+        name: formData.get('name'),
+        host: formData.get('host'),
+        port: parseInt(formData.get('port')),
+        username: formData.get('username'),
+        auth_method: formData.get('auth_method'),
+        use_sudo: formData.get('use_sudo') === 'on'
+    };
+    
+    if (data.auth_method === 'password') {
+        const password = formData.get('password');
+        if (password) {
+            data.password = password;
+        }
+    } else {
+        data.key_path = formData.get('key_path');
+    }
+    
+    try {
+        await apiCall(`/api/clients/${clientId}`, 'PUT', data);
+        closeModal('edit-client-modal');
+        loadClients();
+        loadStats();
+        showMessage('Client updated successfully! 🎉', 'success');
+    } catch (error) {
+        showMessage('Failed to update client: ' + error.message, 'error');
     }
 }
 
@@ -189,43 +275,83 @@ function toggleAuthFields(select) {
     }
 }
 
+function toggleEditAuthFields(select) {
+    const passwordField = document.getElementById('edit-password-field');
+    const keyField = document.getElementById('edit-key-field');
+    
+    if (select.value === 'password') {
+        passwordField.style.display = 'block';
+        keyField.style.display = 'none';
+    } else {
+        passwordField.style.display = 'none';
+        keyField.style.display = 'block';
+    }
+}
+
+function updateClientFilters() {
+    const jobFilter = document.getElementById('job-client-filter');
+    const backupFilter = document.getElementById('backup-client-filter');
+    
+    const options = '<option value="">All Clients</option>' + 
+        allClients.map(client => `<option value="${client.id}">${escapeHtml(client.name)}</option>`).join('');
+    
+    jobFilter.innerHTML = options;
+    backupFilter.innerHTML = options;
+}
+
 // Jobs Management
 async function loadJobs() {
     try {
         const jobs = await apiCall('/api/jobs');
-        const container = document.getElementById('jobs-list');
-        
-        if (jobs.length === 0) {
-            container.innerHTML = '<p class="empty-message">No backup jobs configured. The schleem is ready to be repurposed for later batches! Add a job to get started. 🔄</p>';
-            return;
-        }
-        
-        container.innerHTML = jobs.map(job => {
-            const statusClass = job.enabled ? 'status-enabled' : 'status-disabled';
-            const statusText = job.enabled ? 'Enabled' : 'Disabled';
-            const lastRun = job.last_run ? new Date(job.last_run).toLocaleString() : 'Never';
-            
-            return `
-                <div class="list-item">
-                    <div class="item-info">
-                        <div class="item-title">${escapeHtml(job.name)}</div>
-                        <div class="item-meta">
-                            Client: ${escapeHtml(job.client_name)} | Path: ${escapeHtml(job.source_path)}<br>
-                            Schedule: ${escapeHtml(job.schedule || 'Manual only')} | Last run: ${lastRun}
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <span class="status-badge ${statusClass}">${statusText}</span>
-                        <button class="btn btn-success btn-sm" onclick="runJob(${job.id})">▶ Run Now</button>
-                        <button class="btn btn-secondary btn-sm" onclick="showJobHistory(${job.id})">History</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteJob(${job.id})">Delete</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        allJobs = jobs;
+        displayJobs(jobs);
     } catch (error) {
         console.error('Failed to load jobs:', error);
         showMessage('Failed to load jobs', 'error');
+    }
+}
+
+function displayJobs(jobs) {
+    const container = document.getElementById('jobs-list');
+    
+    if (jobs.length === 0) {
+        container.innerHTML = '<p class="empty-message">No backup jobs configured. The schleem is ready to be repurposed for later batches! Add a job to get started. 🔄</p>';
+        return;
+    }
+    
+    container.innerHTML = jobs.map(job => {
+        const statusClass = job.enabled ? 'status-enabled' : 'status-disabled';
+        const statusText = job.enabled ? 'Enabled' : 'Disabled';
+        const lastRun = job.last_run ? new Date(job.last_run).toLocaleString() : 'Never';
+        
+        return `
+            <div class="list-item" data-client-id="${job.client_id}">
+                <div class="item-info">
+                    <div class="item-title">${escapeHtml(job.name)}</div>
+                    <div class="item-meta">
+                        Client: ${escapeHtml(job.client_name)} | Path: ${escapeHtml(job.source_path)}<br>
+                        Schedule: ${escapeHtml(job.schedule || 'Manual only')} | Last run: ${lastRun}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                    <button class="btn btn-success btn-sm" onclick="runJob(${job.id})">▶ Run Now</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showEditJobModal(${job.id})">Edit</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showJobHistory(${job.id})">History</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteJob(${job.id})">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterJobs() {
+    const clientId = document.getElementById('job-client-filter').value;
+    if (clientId) {
+        const filtered = allJobs.filter(job => job.client_id == clientId);
+        displayJobs(filtered);
+    } else {
+        displayJobs(allJobs);
     }
 }
 
@@ -271,6 +397,55 @@ async function addJob(event) {
         showMessage('Job added successfully! The grumbo is ready to process your data! 🚀', 'success');
     } catch (error) {
         showMessage('Failed to add job: ' + error.message, 'error');
+    }
+}
+
+async function showEditJobModal(jobId) {
+    try {
+        const job = await apiCall(`/api/jobs/${jobId}`);
+        const clients = await apiCall('/api/clients');
+        
+        document.getElementById('edit-job-id').value = job.id;
+        document.getElementById('edit-job-name').value = job.name;
+        document.getElementById('edit-source-path-input').value = job.source_path;
+        document.getElementById('edit-job-schedule').value = job.schedule || '';
+        document.getElementById('edit-job-enabled').checked = job.enabled;
+        
+        const select = document.getElementById('edit-job-client-select');
+        select.innerHTML = '<option value="">Select a client...</option>' +
+            clients.map(client => `<option value="${client.id}" ${client.id === job.client_id ? 'selected' : ''}>${escapeHtml(client.name)}</option>`).join('');
+        
+        currentClient = job.client_id;
+        currentEditMode = 'edit';
+        
+        document.getElementById('edit-job-modal').style.display = 'block';
+    } catch (error) {
+        showMessage('Failed to load job: ' + error.message, 'error');
+    }
+}
+
+async function updateJob(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    const jobId = formData.get('job_id');
+    
+    const data = {
+        name: formData.get('name'),
+        client_id: parseInt(formData.get('client_id')),
+        source_path: formData.get('source_path'),
+        schedule: formData.get('schedule') || null,
+        enabled: formData.get('enabled') === 'on'
+    };
+    
+    try {
+        await apiCall(`/api/jobs/${jobId}`, 'PUT', data);
+        closeModal('edit-job-modal');
+        loadJobs();
+        loadStats();
+        showMessage('Job updated successfully! 🎉', 'success');
+    } catch (error) {
+        showMessage('Failed to update job: ' + error.message, 'error');
     }
 }
 
@@ -351,42 +526,114 @@ async function showJobHistory(jobId) {
 async function loadBackups() {
     try {
         const backups = await apiCall('/api/backups');
-        const container = document.getElementById('backups-list');
-        
-        if (backups.length === 0) {
-            container.innerHTML = '<p class="empty-message">No backups yet. Once a Shlami shows up and rubs your data with fleeb juice, backups will appear here! 🎯</p>';
-            return;
-        }
-        
-        container.innerHTML = backups.map(backup => {
-            const statusClass = `status-${backup.status}`;
-            const duration = backup.end_time 
-                ? Math.round((new Date(backup.end_time) - new Date(backup.start_time)) / 1000) + 's'
-                : '-';
-            
-            return `
-                <div class="list-item">
-                    <div class="item-info">
-                        <div class="item-title">${escapeHtml(backup.job_name)} - ${escapeHtml(backup.client_name)}</div>
-                        <div class="item-meta">
-                            Date: ${new Date(backup.start_time).toLocaleString()} | 
-                            Duration: ${duration} | 
-                            Size: ${formatBytes(backup.size_bytes)} | 
-                            Files: ${backup.file_count || '-'}
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <span class="status-badge ${statusClass}">${backup.status}</span>
-                        ${backup.status === 'completed' ? 
-                            `<button class="btn btn-secondary btn-sm" onclick="restoreBackup(${backup.id})">↻ Restore</button>` : 
-                            ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+        allBackups = backups;
+        displayBackups(backups);
     } catch (error) {
         console.error('Failed to load backups:', error);
         showMessage('Failed to load backups', 'error');
+    }
+}
+
+function displayBackups(backups) {
+    const container = document.getElementById('backups-list');
+    
+    if (backups.length === 0) {
+        container.innerHTML = '<p class="empty-message">No backups yet. Once a Shlami shows up and rubs your data with fleeb juice, backups will appear here! 🎯</p>';
+        return;
+    }
+    
+    container.innerHTML = backups.map(backup => {
+        const statusClass = `status-${backup.status}`;
+        const duration = backup.end_time 
+            ? Math.round((new Date(backup.end_time) - new Date(backup.start_time)) / 1000) + 's'
+            : '-';
+        
+        // Get client ID from jobs
+        const job = allJobs.find(j => j.id === backup.job_id);
+        const clientId = job ? job.client_id : '';
+        
+        return `
+            <div class="list-item" data-client-id="${clientId}">
+                <div class="item-info">
+                    <div class="item-title">${escapeHtml(backup.job_name)} - ${escapeHtml(backup.client_name)}</div>
+                    <div class="item-meta">
+                        Date: ${new Date(backup.start_time).toLocaleString()} | 
+                        Duration: ${duration} | 
+                        Size: ${formatBytes(backup.size_bytes)} | 
+                        Files: ${backup.file_count || '-'}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <span class="status-badge ${statusClass}">${backup.status}</span>
+                    ${backup.status === 'completed' ? 
+                        `<button class="btn btn-secondary btn-sm" onclick="showBackupFiles(${backup.id})">📄 Files</button>
+                         <button class="btn btn-secondary btn-sm" onclick="restoreBackup(${backup.id})">↻ Restore</button>` : 
+                        ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterBackups() {
+    const clientId = document.getElementById('backup-client-filter').value;
+    if (clientId) {
+        const filtered = allBackups.filter(backup => {
+            const job = allJobs.find(j => j.id === backup.job_id);
+            return job && job.client_id == clientId;
+        });
+        displayBackups(filtered);
+    } else {
+        displayBackups(allBackups);
+    }
+}
+
+async function showBackupFiles(backupId) {
+    try {
+        const content = document.getElementById('backup-files-content');
+        content.innerHTML = '<p class="loading">Loading files...</p>';
+        document.getElementById('backup-files-modal').style.display = 'block';
+        
+        const result = await apiCall(`/api/backups/${backupId}/files`);
+        
+        if (!result.success) {
+            content.innerHTML = `<p class="message-error">${result.error}</p>`;
+            return;
+        }
+        
+        if (result.files.length === 0) {
+            content.innerHTML = '<p class="empty-message">No files found in backup</p>';
+            return;
+        }
+        
+        content.innerHTML = `
+            <div class="backup-summary">
+                <p><strong>Total Files:</strong> ${result.total_files}</p>
+                <p><strong>Total Size:</strong> ${formatBytes(result.total_size)}</p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+                        <th style="padding: 10px;">Name</th>
+                        <th style="padding: 10px;">Path</th>
+                        <th style="padding: 10px; text-align: right;">Size</th>
+                        <th style="padding: 10px;">Modified</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${result.files.map(file => `
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px;">${escapeHtml(file.name)}</td>
+                            <td style="padding: 10px; font-family: monospace; font-size: 0.85em;">${escapeHtml(file.path)}</td>
+                            <td style="padding: 10px; text-align: right;">${formatBytes(file.size)}</td>
+                            <td style="padding: 10px; font-size: 0.85em;">${new Date(file.modified).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    } catch (error) {
+        document.getElementById('backup-files-content').innerHTML = `<p class="message-error">Failed to load files: ${error.message}</p>`;
     }
 }
 
@@ -415,12 +662,13 @@ async function loadClientPaths(clientId) {
     currentClient = clientId;
 }
 
-async function showFileBrowser() {
+async function showFileBrowser(mode = 'add') {
     if (!currentClient) {
         showMessage('Please select a client first', 'error');
         return;
     }
     
+    currentEditMode = mode;
     currentPath = '/';
     document.getElementById('file-browser-modal').style.display = 'block';
     await browsePath('/');
@@ -478,7 +726,11 @@ async function browsePath(path) {
 }
 
 function selectCurrentPath() {
-    document.getElementById('source-path-input').value = currentPath;
+    if (currentEditMode === 'edit') {
+        document.getElementById('edit-source-path-input').value = currentPath;
+    } else {
+        document.getElementById('source-path-input').value = currentPath;
+    }
     closeModal('file-browser-modal');
 }
 

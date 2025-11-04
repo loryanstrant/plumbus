@@ -142,7 +142,10 @@ class BackupManager:
         
         start_time = datetime.now()
         backup_name = f"{job['name']}_{start_time.strftime('%Y%m%d_%H%M%S')}"
-        backup_path = os.path.join(self.backup_dir, str(job['client_id']), backup_name)
+        
+        # Use client host (IP or hostname) for backup directory
+        client_identifier = client['host'].replace('/', '_').replace(':', '_')
+        backup_path = os.path.join(self.backup_dir, client_identifier, backup_name)
         
         # Create backup directory
         os.makedirs(backup_path, exist_ok=True)
@@ -390,3 +393,45 @@ class BackupManager:
         except Exception as e:
             logger.error(f"Error getting statistics: {e}")
             return {}
+    
+    def get_backup_files(self, backup_id):
+        """Get detailed list of files in a backup"""
+        backup = self.db.get_backup(backup_id)
+        if not backup:
+            return {'success': False, 'error': 'Backup not found'}
+        
+        backup_path = backup.get('backup_path')
+        if not backup_path or not os.path.exists(backup_path):
+            return {'success': False, 'error': 'Backup files not found'}
+        
+        try:
+            files = []
+            for root, dirs, filenames in os.walk(backup_path):
+                for filename in filenames:
+                    filepath = os.path.join(root, filename)
+                    try:
+                        stat = os.stat(filepath)
+                        relative_path = os.path.relpath(filepath, backup_path)
+                        files.append({
+                            'name': filename,
+                            'path': relative_path,
+                            'size': stat.st_size,
+                            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                            'is_dir': False
+                        })
+                    except Exception as e:
+                        logger.error(f"Error getting file info for {filepath}: {e}")
+            
+            # Sort by path
+            files.sort(key=lambda x: x['path'])
+            
+            return {
+                'success': True,
+                'backup_id': backup_id,
+                'files': files,
+                'total_files': len(files),
+                'total_size': sum(f['size'] for f in files)
+            }
+        except Exception as e:
+            logger.error(f"Error listing backup files: {e}")
+            return {'success': False, 'error': str(e)}

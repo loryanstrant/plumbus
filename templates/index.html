@@ -4,15 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plumbus - Centralized Backup Solution</title>
+    <link rel="icon" type="image/svg+xml" href="/static/plumbus-icon.svg">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🛸 PLUMBUS Backup Server</h1>
+            <div class="header-icon">
+                <img src="/static/plumbus-icon.svg" alt="Plumbus" class="plumbus-icon">
+            </div>
+            <h1>PLUMBUS Backup Server</h1>
             <p class="subtitle">Persistent Linux Unified Multi-device Backup & Update System</p>
+            <p class="version" id="version-display">Version: Loading...</p>
             <p class="tagline">Everyone has a Plumbus in their home... now every Linux cluster can have one too!</p>
             <p class="tagline-small">⚠️ Regular Plumbus manufacturing involves schleem repurposing. PLUMBUS Backup System involves data repurposing (safely!).</p>
+            <div class="github-link">
+                <a href="https://github.com/loryanstrant/plumbus" target="_blank" rel="noopener noreferrer">
+                    <svg height="20" width="20" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                    </svg>
+                    View on GitHub
+                </a>
+            </div>
         </header>
 
         <div class="stats-panel">
@@ -55,6 +68,12 @@
         <div id="jobs-tab" class="tab-content">
             <div class="section-header">
                 <h2>Backup Jobs</h2>
+                <div class="filter-group">
+                    <label for="job-client-filter">Filter by client:</label>
+                    <select id="job-client-filter" onchange="filterJobs()">
+                        <option value="">All Clients</option>
+                    </select>
+                </div>
                 <button class="btn btn-primary" onclick="showAddJobModal()">+ Add Job</button>
             </div>
             <div id="jobs-list" class="list-container">
@@ -66,6 +85,12 @@
         <div id="backups-tab" class="tab-content">
             <div class="section-header">
                 <h2>Backup History</h2>
+                <div class="filter-group">
+                    <label for="backup-client-filter">Filter by client:</label>
+                    <select id="backup-client-filter" onchange="filterBackups()">
+                        <option value="">All Clients</option>
+                    </select>
+                </div>
                 <button class="btn btn-secondary" onclick="loadBackups()">🔄 Refresh</button>
             </div>
             <div id="backups-list" class="list-container">
@@ -111,9 +136,65 @@
                     <label>SSH Key Path:</label>
                     <input type="text" name="key_path" placeholder="/path/to/private/key">
                 </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="use_sudo"> Use sudo for backups
+                    </label>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('add-client-modal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Client Modal -->
+    <div id="edit-client-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('edit-client-modal')">&times;</span>
+            <h2>Edit Backup Client</h2>
+            <form id="edit-client-form" onsubmit="updateClient(event)">
+                <input type="hidden" name="client_id" id="edit-client-id">
+                <div class="form-group">
+                    <label>Client Name:</label>
+                    <input type="text" name="name" id="edit-client-name" required placeholder="e.g., Raspberry Pi Zero">
+                </div>
+                <div class="form-group">
+                    <label>Host:</label>
+                    <input type="text" name="host" id="edit-client-host" required placeholder="e.g., 192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label>Port:</label>
+                    <input type="number" name="port" id="edit-client-port" value="22" required>
+                </div>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" id="edit-client-username" required placeholder="e.g., pi">
+                </div>
+                <div class="form-group">
+                    <label>Authentication Method:</label>
+                    <select name="auth_method" id="edit-client-auth-method" onchange="toggleEditAuthFields(this)">
+                        <option value="password">Password</option>
+                        <option value="key">SSH Key</option>
+                    </select>
+                </div>
+                <div class="form-group" id="edit-password-field">
+                    <label>Password:</label>
+                    <input type="password" name="password" id="edit-client-password" placeholder="Enter password (leave blank to keep current)">
+                </div>
+                <div class="form-group" id="edit-key-field" style="display: none;">
+                    <label>SSH Key Path:</label>
+                    <input type="text" name="key_path" id="edit-client-key-path" placeholder="/path/to/private/key">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="use_sudo" id="edit-client-use-sudo"> Use sudo for backups
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('edit-client-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Client</button>
                 </div>
             </form>
         </div>
@@ -160,6 +241,48 @@
         </div>
     </div>
 
+    <!-- Edit Job Modal -->
+    <div id="edit-job-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('edit-job-modal')">&times;</span>
+            <h2>Edit Backup Job</h2>
+            <form id="edit-job-form" onsubmit="updateJob(event)">
+                <input type="hidden" name="job_id" id="edit-job-id">
+                <div class="form-group">
+                    <label>Job Name:</label>
+                    <input type="text" name="name" id="edit-job-name" required placeholder="e.g., Home Directory Backup">
+                </div>
+                <div class="form-group">
+                    <label>Client:</label>
+                    <select name="client_id" id="edit-job-client-select" required onchange="loadClientPaths(this.value)">
+                        <option value="">Select a client...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Source Path:</label>
+                    <div class="path-input-group">
+                        <input type="text" name="source_path" id="edit-source-path-input" required placeholder="/home/pi">
+                        <button type="button" class="btn btn-secondary" onclick="showFileBrowser('edit')">Browse</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Schedule (Cron Expression):</label>
+                    <input type="text" name="schedule" id="edit-job-schedule" placeholder="0 2 * * * (Daily at 2 AM)">
+                    <small>Format: minute hour day month day_of_week (leave empty for manual only)</small>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="enabled" id="edit-job-enabled"> Enabled
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('edit-job-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Job</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- File Browser Modal -->
     <div id="file-browser-modal" class="modal">
         <div class="modal-content large">
@@ -182,6 +305,17 @@
             <span class="close" onclick="closeModal('job-details-modal')">&times;</span>
             <h2>Job History</h2>
             <div id="job-history-content">
+                <p class="loading">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Files Modal -->
+    <div id="backup-files-modal" class="modal">
+        <div class="modal-content large">
+            <span class="close" onclick="closeModal('backup-files-modal')">&times;</span>
+            <h2>Backup Files</h2>
+            <div id="backup-files-content">
                 <p class="loading">Loading...</p>
             </div>
         </div>

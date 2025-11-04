@@ -19,6 +19,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 import logging
+from pathlib import Path
 
 from backend.ssh_client import SSHClient
 from backend.backup_manager import BackupManager
@@ -30,6 +31,14 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Load version from VERSION file
+VERSION_FILE = os.path.join(os.path.dirname(__file__), 'VERSION')
+try:
+    with open(VERSION_FILE, 'r') as f:
+        VERSION = f.read().strip()
+except FileNotFoundError:
+    VERSION = '5.0.0'  # Default version
 
 # Initialize Flask app
 app = Flask(__name__, 
@@ -221,6 +230,24 @@ def list_backups():
     backups = db.get_all_backups()
     return jsonify(backups)
 
+@app.route('/api/backups/<int:backup_id>', methods=['GET'])
+def get_backup_details(backup_id):
+    """Get details of a specific backup"""
+    backup = db.get_backup(backup_id)
+    if backup:
+        return jsonify(backup)
+    return jsonify({'error': 'Backup not found'}), 404
+
+@app.route('/api/backups/<int:backup_id>/files', methods=['GET'])
+def get_backup_files(backup_id):
+    """Get list of files in a backup"""
+    try:
+        result = backup_manager.get_backup_files(backup_id)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error getting backup files: {e}")
+        return jsonify({'success': False, 'error': 'Failed to get backup files'}), 400
+
 @app.route('/api/backups/<int:backup_id>/restore', methods=['POST'])
 def restore_backup(backup_id):
     """Restore a backup"""
@@ -237,7 +264,13 @@ def restore_backup(backup_id):
 def get_stats():
     """Get backup statistics"""
     stats = backup_manager.get_statistics()
+    stats['version'] = VERSION
     return jsonify(stats)
+
+@app.route('/api/version', methods=['GET'])
+def get_version():
+    """Get application version"""
+    return jsonify({'version': VERSION})
 
 if __name__ == '__main__':
     logger.info("=" * 70)
