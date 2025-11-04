@@ -1,5 +1,9 @@
 // Plumbus Backup Server - Client-side JavaScript
 
+// Constants
+const DEFAULT_SCHEDULE_HOUR = 2;  // 2 AM
+const DEFAULT_SCHEDULE_MINUTE = 0;  // :00
+
 // Global state
 let currentClient = null;
 let currentPath = '/';
@@ -380,11 +384,14 @@ async function addJob(event) {
     const form = event.target;
     const formData = new FormData(form);
     
+    // Build schedule from UI
+    const schedule = buildScheduleFromUI('add');
+    
     const data = {
         name: formData.get('name'),
         client_id: parseInt(formData.get('client_id')),
         source_path: formData.get('source_path'),
-        schedule: formData.get('schedule') || null,
+        schedule: schedule,
         enabled: formData.get('enabled') === 'on'
     };
     
@@ -392,6 +399,9 @@ async function addJob(event) {
         await apiCall('/api/jobs', 'POST', data);
         closeModal('add-job-modal');
         form.reset();
+        // Reset to default values
+        document.getElementById('add-schedule-frequency').value = 'daily';
+        updateScheduleFields('add');
         loadJobs();
         loadStats();
         showMessage('Job added successfully! The grumbo is ready to process your data! 🚀', 'success');
@@ -408,8 +418,10 @@ async function showEditJobModal(jobId) {
         document.getElementById('edit-job-id').value = job.id;
         document.getElementById('edit-job-name').value = job.name;
         document.getElementById('edit-source-path-input').value = job.source_path;
-        document.getElementById('edit-job-schedule').value = job.schedule || '';
         document.getElementById('edit-job-enabled').checked = job.enabled;
+        
+        // Parse the schedule into UI components
+        parseScheduleToUI(job.schedule, 'edit');
         
         const select = document.getElementById('edit-job-client-select');
         select.innerHTML = '<option value="">Select a client...</option>' +
@@ -430,11 +442,14 @@ async function updateJob(event) {
     const formData = new FormData(form);
     const jobId = formData.get('job_id');
     
+    // Build schedule from UI
+    const schedule = buildScheduleFromUI('edit');
+    
     const data = {
         name: formData.get('name'),
         client_id: parseInt(formData.get('client_id')),
         source_path: formData.get('source_path'),
-        schedule: formData.get('schedule') || null,
+        schedule: schedule,
         enabled: formData.get('enabled') === 'on'
     };
     
@@ -796,4 +811,127 @@ function showMessage(message, type) {
     setTimeout(() => {
         messageEl.remove();
     }, 5000);
+}
+
+// Schedule UI Functions
+function updateScheduleFields(mode) {
+    const prefix = mode === 'add' ? 'add' : 'edit';
+    const frequency = document.getElementById(`${prefix}-schedule-frequency`).value;
+    
+    // Hide all schedule-related fields first
+    document.getElementById(`${prefix}-schedule-time`).style.display = 'none';
+    document.getElementById(`${prefix}-schedule-days`).style.display = 'none';
+    document.getElementById(`${prefix}-schedule-day-of-month`).style.display = 'none';
+    document.getElementById(`${prefix}-schedule-custom`).style.display = 'none';
+    
+    // Show relevant fields based on frequency
+    if (frequency === 'daily') {
+        document.getElementById(`${prefix}-schedule-time`).style.display = 'block';
+    } else if (frequency === 'weekly') {
+        document.getElementById(`${prefix}-schedule-time`).style.display = 'block';
+        document.getElementById(`${prefix}-schedule-days`).style.display = 'block';
+    } else if (frequency === 'monthly') {
+        document.getElementById(`${prefix}-schedule-time`).style.display = 'block';
+        document.getElementById(`${prefix}-schedule-day-of-month`).style.display = 'block';
+    } else if (frequency === 'custom') {
+        document.getElementById(`${prefix}-schedule-custom`).style.display = 'block';
+    }
+}
+
+function buildScheduleFromUI(mode) {
+    const prefix = mode === 'add' ? 'add' : 'edit';
+    const frequency = document.getElementById(`${prefix}-schedule-frequency`).value;
+    
+    if (frequency === 'manual') {
+        return null;
+    }
+    
+    if (frequency === 'custom') {
+        const customCron = document.getElementById(`${prefix}-schedule-cron`).value.trim();
+        return customCron || null;
+    }
+    
+    const hour = document.getElementById(`${prefix}-schedule-hour`).value;
+    const minute = document.getElementById(`${prefix}-schedule-minute`).value;
+    
+    let cron = '';
+    
+    if (frequency === 'daily') {
+        // Daily: minute hour * * *
+        cron = `${minute} ${hour} * * *`;
+    } else if (frequency === 'weekly') {
+        // Weekly: minute hour * * day_of_week
+        const days = Array.from(document.querySelectorAll(`#${prefix}-schedule-days input[name="schedule_day"]:checked`))
+            .map(cb => cb.value);
+        
+        if (days.length === 0) {
+            return null; // No days selected
+        }
+        
+        cron = `${minute} ${hour} * * ${days.join(',')}`;
+    } else if (frequency === 'monthly') {
+        // Monthly: minute hour day * *
+        const dayOfMonth = document.getElementById(`${prefix}-schedule-day-of-month`).value;
+        
+        if (dayOfMonth === 'last') {
+            // NOTE: Standard cron doesn't support 'L' for last day of month
+            // Using day 28 as a safe fallback that exists in all months
+            // Users needing true last-day-of-month should use Custom mode with external tools
+            cron = `${minute} ${hour} 28 * *`;
+        } else {
+            cron = `${minute} ${hour} ${dayOfMonth} * *`;
+        }
+    }
+    
+    return cron;
+}
+
+function parseScheduleToUI(schedule, mode) {
+    const prefix = mode === 'add' ? 'add' : 'edit';
+    
+    if (!schedule || schedule.trim() === '') {
+        document.getElementById(`${prefix}-schedule-frequency`).value = 'manual';
+        updateScheduleFields(mode);
+        return;
+    }
+    
+    const parts = schedule.trim().split(/\s+/);
+    if (parts.length !== 5) {
+        // Invalid or custom format
+        document.getElementById(`${prefix}-schedule-frequency`).value = 'custom';
+        document.getElementById(`${prefix}-schedule-cron`).value = schedule;
+        updateScheduleFields(mode);
+        return;
+    }
+    
+    const [minute, hour, day, month, dayOfWeek] = parts;
+    
+    // Set time values (use defaults for wildcards)
+    document.getElementById(`${prefix}-schedule-hour`).value = hour === '*' ? DEFAULT_SCHEDULE_HOUR.toString() : hour;
+    document.getElementById(`${prefix}-schedule-minute`).value = minute === '*' ? DEFAULT_SCHEDULE_MINUTE.toString() : minute;
+    
+    // Determine frequency type
+    if (day === '*' && month === '*' && dayOfWeek === '*') {
+        // Daily
+        document.getElementById(`${prefix}-schedule-frequency`).value = 'daily';
+    } else if (day === '*' && month === '*' && dayOfWeek !== '*') {
+        // Weekly
+        document.getElementById(`${prefix}-schedule-frequency`).value = 'weekly';
+        
+        // Check the appropriate days
+        const days = dayOfWeek.split(',');
+        document.querySelectorAll(`#${prefix}-schedule-days input[name="schedule_day"]`).forEach(cb => {
+            cb.checked = days.includes(cb.value);
+        });
+    } else if (day !== '*' && month === '*' && dayOfWeek === '*') {
+        // Monthly
+        document.getElementById(`${prefix}-schedule-frequency`).value = 'monthly';
+        document.getElementById(`${prefix}-schedule-day-of-month`).value = day;
+    } else {
+        // Custom
+        document.getElementById(`${prefix}-schedule-frequency`).value = 'custom';
+        document.getElementById(`${prefix}-schedule-cron`).value = schedule;
+    }
+    
+    updateScheduleFields(mode);
 }
