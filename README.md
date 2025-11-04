@@ -1,4 +1,8 @@
 # PLUMBUS
+
+<img width="256" height="256" alt="plumbus-logo" src="https://github.com/loryanstrant/plumbus/blob/main/plumbus-logo.png?raw=true" />
+
+
 ## Persistent Linux Unified Multi-device Backup & Update System
 
 ![PLUMBUS](https://img.shields.io/badge/PLUMBUS-Backup%20System-blue)
@@ -74,15 +78,18 @@ docker-compose up -d
 ### Using Docker Compose
 
 ```bash
-# Clone the repository
-git clone https://github.com/loryanstrant/plumbus.git
-cd plumbus
-
-# Start the container
-docker-compose up -d
-
-# Access the web interface
-open http://localhost:5000
+services:
+  plumbus:
+    image: ghcr.io/loryanstrant/plumbus:latest
+    container_name: Plumbus
+    ports:
+      - "5000:5000"
+    volumes:
+      - /somewhere/data:/data
+      - /somewhereconfig:/config
+    environment:
+      - TZ=YourCountry/YourCity
+    restart: unless-stopped
 ```
 
 ### Manual Docker Run
@@ -213,7 +220,7 @@ A: If you need to backup files that require elevated permissions (like `/etc/nut
   username ALL=(ALL) NOPASSWD: /usr/bin/rsync
   ```
 
-**Important:** PLUMBUS will now automatically verify that the user has passwordless sudo access to rsync when you:
+**Important:** PLUMBUS will automatically verify that the user has passwordless sudo access to rsync when you:
 - Test a connection with "Use sudo" enabled
 - Run a backup job with "Use sudo" enabled
 - Restore a backup with "Use sudo" enabled
@@ -250,6 +257,10 @@ A: PLUMBUS is designed for Linux systems. Windows support would require signific
 
 Everyone knows about Plumbus, but contributions are always welcome! 
 Please submit pull requests or open issues on GitHub.
+
+## Development Approach
+<img width="256" height="256" alt="Vibe Coding with GitHub Copilot 256x256" src="https://github.com/user-attachments/assets/bb41d075-6b3e-4f2b-a88e-94b2022b5d4f" />
+
 
 ## License
 
