@@ -576,3 +576,55 @@ body {
         justify-content: flex-end;
     }
 }
+
+/* Schedule UI Components */
+.time-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-picker select {
+    flex: 1;
+    max-width: 120px;
+}
+
+.time-picker span {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.days-picker {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.days-picker label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.days-picker label:hover {
+    background-color: var(--background);
+    border-color: var(--primary-color);
+}
+
+.days-picker input[type="checkbox"]:checked + label,
+.days-picker label:has(input[type="checkbox"]:checked) {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.days-picker input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
