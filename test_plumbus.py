@@ -221,6 +221,41 @@ def test_sudo_support():
             if os.path.exists(db_path):
                 os.unlink(db_path)
 
+def test_sudo_check():
+    """Test sudo checking functionality"""
+    print("🧪 Testing sudo check functionality...")
+    
+    try:
+        from backend.ssh_client import SSHClient
+        
+        # Test that check_sudo_access method exists and has correct signature
+        import inspect
+        check_sudo_method = getattr(SSHClient, 'check_sudo_access', None)
+        assert check_sudo_method is not None, "check_sudo_access method should exist"
+        print("   ✓ check_sudo_access method exists")
+        
+        # Test that test_connection accepts check_sudo parameter
+        test_conn_method = getattr(SSHClient, 'test_connection', None)
+        assert test_conn_method is not None, "test_connection method should exist"
+        sig = inspect.signature(test_conn_method)
+        assert 'check_sudo' in sig.parameters, "test_connection should accept check_sudo parameter"
+        print("   ✓ test_connection accepts check_sudo parameter")
+        
+        # Test that check_sudo parameter has default value of False
+        check_sudo_param = sig.parameters['check_sudo']
+        assert check_sudo_param.default == False, "check_sudo should default to False"
+        print("   ✓ check_sudo parameter defaults to False")
+        
+        print("✅ Sudo check functionality tests passed!")
+        return True
+        
+    except Exception as e:
+        print(f"   ❌ Test failed with error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 if __name__ == '__main__':
     print("=" * 70)
     print("🛸 PLUMBUS Test Suite")
@@ -259,9 +294,16 @@ if __name__ == '__main__':
         tests_failed += 1
     
     print()
+    
+    if test_sudo_check():
+        tests_passed += 1
+    else:
+        tests_failed += 1
+    
+    print()
     print("=" * 70)
-    print(f"Tests passed: {tests_passed}/4")
-    print(f"Tests failed: {tests_failed}/4")
+    print(f"Tests passed: {tests_passed}/5")
+    print(f"Tests failed: {tests_failed}/5")
     
     if tests_failed == 0:
         print()
