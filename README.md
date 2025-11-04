@@ -16,13 +16,15 @@ PLUMBUS is a centralized backup solution for Raspberry Pi, Linux servers, and ot
 ### Features
 
 - 🚀 **Multi-Architecture Support**: Works on ARM64 and x86-64 systems
-- 🌐 **Web Interface**: Beautiful UI for managing clients, jobs, and backups
+- 🌐 **Web Interface**: Beautiful, modern UI for managing clients, jobs, and backups
 - 🔄 **Automated Backups**: Schedule backups using cron expressions
 - 📁 **File Browser**: Browse remote filesystems to select backup paths
 - 🔐 **SSH/Rsync Based**: Agent-less backups using standard SSH
 - 🏠 **VLAN-Friendly**: Works across different network segments
-- 📊 **Backup Statistics**: Track backup sizes, success rates, and history
+- 📊 **Backup Statistics**: Real-time dashboard with backup sizes, success rates, and history
 - ↻ **Restore Capability**: Easy restoration of backed-up files
+- 🔑 **Flexible Authentication**: Supports both password and SSH key-based authentication
+- 🛡️ **Sudo Support**: Optional sudo for backing up system files requiring elevated permissions
 
 ## Screenshots
 
@@ -146,13 +148,33 @@ The Docker image automatically detects and uses the correct architecture for you
 
 PLUMBUS provides a REST API for automation:
 
+**Clients:**
 - `GET /api/clients` - List all clients
 - `POST /api/clients` - Add a new client
+- `GET /api/clients/{id}` - Get client details
+- `PUT /api/clients/{id}` - Update a client
+- `DELETE /api/clients/{id}` - Delete a client
+- `POST /api/clients/{id}/test` - Test SSH connection to client
+- `POST /api/clients/{id}/browse` - Browse files on client
+
+**Backup Jobs:**
 - `GET /api/jobs` - List all backup jobs
 - `POST /api/jobs` - Create a backup job
+- `GET /api/jobs/{id}` - Get job details
+- `PUT /api/jobs/{id}` - Update a job
+- `DELETE /api/jobs/{id}` - Delete a job
 - `POST /api/jobs/{id}/run` - Run a job immediately
-- `GET /api/backups` - List backup history
+- `GET /api/jobs/{id}/history` - Get backup history for a job
+
+**Backups:**
+- `GET /api/backups` - List all backups
+- `GET /api/backups/{id}` - Get backup details
+- `GET /api/backups/{id}/files` - List files in a backup
 - `POST /api/backups/{id}/restore` - Restore a backup
+
+**System:**
+- `GET /api/stats` - Get backup statistics
+- `GET /api/version` - Get application version
 
 ## Development
 
