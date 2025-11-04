@@ -86,7 +86,7 @@ services:
       - "5000:5000"
     volumes:
       - /somewhere/data:/data
-      - /somewhereconfig:/config
+      - /somewhere/config:/config
     environment:
       - TZ=YourCountry/YourCity
     restart: unless-stopped
