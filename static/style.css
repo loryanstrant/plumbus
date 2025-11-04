@@ -63,7 +63,7 @@ body {
     min-width: 0;
 }
 
-header h1 {
+.header-content h1 {
     font-size: 2.5em;
     margin-bottom: 10px;
     color: var(--primary-color);
