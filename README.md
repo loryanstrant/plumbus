@@ -44,6 +44,10 @@ PLUMBUS is a centralized backup solution for Raspberry Pi, Linux servers, and ot
 ![Backup Jobs](docs/screenshots/backup-jobs.png)
 *Manage and schedule backup jobs for your clients*
 
+### Add Backup Job
+![Add Job Modal](docs/screenshots/add-job-modal.png)
+*Easily select files and schedule new jobs*
+
 ### Backup History
 ![Backup History](docs/screenshots/backup-history.png)
 *View and restore from backup history*
